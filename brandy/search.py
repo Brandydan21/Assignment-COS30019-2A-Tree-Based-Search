@@ -1,8 +1,10 @@
+import sys
+
 class Node:
     def __init__(self, node_id: int, coord: tuple):
         self.node_id = node_id
         self.coord = coord
-        self.edges = []  # list of (neighbor, cost) tuples
+        self.edges = [] # list of neighbours and their cost
 
     def add_edge(self, neighbor, cost):
         self.edges.append((neighbor, cost))
@@ -10,26 +12,32 @@ class Node:
     def __repr__(self):
         return f"Node {self.node_id} at {self.coord}"
 
-def dfs(nodes, start, goals, visited=None, path=None, total_cost=0):
-    if visited is None:
-        visited = set()
-    if path is None:
-        path = []
-
-    visited.add(start)
-    path.append(start)
-
-    # If the start node is one of the goal nodes, return the path and cost
-    if start in goals:
-        return path, total_cost
-
-    for neighbor, cost in nodes[start].edges:
-        if neighbor not in visited:
-            result = dfs(nodes, neighbor, goals, visited, path.copy(), total_cost + cost)
-            if result:  # If a path is found
-                return result
-
+def dfs(nodes, start, goals):
+    frontier = [(start, [start])] # frontier has the current node that is popped and the edges 
+    visited = set()
+    
+    while frontier:
+        # last in first out for dfs
+        node, current_path = frontier.pop()
+        
+        if node in visited:
+            continue
+        
+        visited.add(node)
+        
+        # If the node is one of the goal nodes, return the path
+        if node in goals:
+            return current_path
+        
+        # add the neighbour nodes of the current node into the frontier
+        # we are not tracking the cost of changing nodes
+        for neighbor, _ in nodes[node].edges:
+            if neighbor not in visited:
+                new_path = current_path + [neighbor]
+                frontier.append((neighbor, new_path))
+    
     return None  # No path found
+
 
 def read_inputs(filename):
     nodes = {}
@@ -120,32 +128,26 @@ def read_inputs(filename):
     return nodes, origin, destinations
 
 def main():
-    filename = "PathFinder-test.txt"  # Change this to your actual filename
+    filename = sys.argv[1]  # Path to the input file
+    method = sys.argv[2]  # Search method (should be 'dfs')
+
     nodes, origin, destinations = read_inputs(filename)
     
-    print(f"origin {origin}")
-    print(f"destinations {destinations}")
-    # Print out the nodes
-    print("Nodes:")
-    for node in nodes.values():
-        print(node)
-
-    # Print out the edges
-    print("\nEdges:")
-    for node in nodes.values():
-        for neighbor, cost in node.edges:
-            print(f"From Node {node.node_id} to Node {neighbor} with cost {cost}")
-
+    print(f"filename: {filename} | method: {method}")
+    
     # Perform DFS to find path to any of the destination nodes
-    if destinations:
-        goals = set(destinations)  # Convert destinations to a set for faster lookup
-        path, total_cost = dfs(nodes, origin, goals)
+    if method == "dfs":
+        goals = destinations  # A list of possible goal nodes
+        path = dfs(nodes, origin, goals)
+        
         if path:
-            print(f"\nPath from {origin} to one of the goals {goals}: {path} with total cost: {total_cost}")
+            # Extract the goal node(s) and total number of nodes
+            goal_nodes = ",".join(map(str, goals))
+            print(f"goal: {goal_nodes}")
+            print(f"number_of_nodes: {len(nodes)}")
+            print(f"path: {','.join(map(str, path))}")
         else:
-            print(f"\nNo path found from {origin} to any of the goals.")
-    else:
-        print("\nNo destinations provided.")
+            print("No path found")
 
 if __name__ == "__main__":
     main()
