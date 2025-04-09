@@ -153,7 +153,7 @@ def parse_input(input_data):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python weighted_astar.py <file_name> <method> [weight]")
+        print("Usage: python wastar.py <file_name> <method> [weight]")
         return
     
     file_name = sys.argv[1]
