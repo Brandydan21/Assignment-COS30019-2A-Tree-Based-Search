@@ -68,7 +68,7 @@ def bfs_search(filename):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python search.py <filename> <method>")
+        print("Usage: python bfs.py <filename> <method>")
         sys.exit(1)
     
     filename = sys.argv[1]
