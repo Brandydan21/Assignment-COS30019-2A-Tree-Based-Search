@@ -32,22 +32,22 @@ class Graph:
         x2, y2 = self.nodes[node2]
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-def astar_search(graph, origin, destinations):
+def weighted_astar_search(graph, origin, destinations, weight=1.0):
     destination_set = set(destinations)
     open_set = []
-
+    
+    # Track visited nodes and their best known costs
+    g_scores = {origin: 0}
+    
     initial_h = min(graph.distance(origin, dest) for dest in destinations)
-    open_set.append((initial_h, origin, [origin], 0))
+    open_set.append((weight * initial_h, origin, [origin], 0))  # f, node, path, g
 
     closed_set = set()
     
     while open_set:
-        min_index = 0
-        for i in range(1, len(open_set)):
-            if open_set[i][0] < open_set[min_index][0]:
-                min_index = i
-
-        f_score, current_node, path, cost = open_set.pop(min_index)
+        # Sort by f-score to easily get the minimum
+        open_set.sort(key=lambda x: x[0])
+        f_score, current_node, path, cost = open_set.pop(0)
 
         if current_node in destination_set:
             return path, cost
@@ -59,22 +59,26 @@ def astar_search(graph, origin, destinations):
 
         neighbors = graph.get_neighbors(current_node)
         
-        neighbors.sort(key=lambda x: x[0])
-        
         for neighbor, edge_cost in neighbors:
             if neighbor in closed_set:
                 continue
 
-            new_cost = cost + edge_cost
+            tentative_g = cost + edge_cost
+            
+            # Only consider this path if it's better than any existing path to neighbor
+            if neighbor in g_scores and tentative_g >= g_scores[neighbor]:
+                continue
+                
+            g_scores[neighbor] = tentative_g
             new_path = path + [neighbor]
-
             h_score = min(graph.distance(neighbor, dest) for dest in destinations)
+            f_score = tentative_g + weight * h_score
 
-            f_score = new_cost + h_score
-
-            open_set.append((f_score, neighbor, new_path, new_cost))
+            open_set.append((f_score, neighbor, new_path, tentative_g))
 
     return None, float('inf')
+
+# [Rest of the code remains the same...]
 
 def parse_input(input_data):
     """Parse the input data and create a graph"""
@@ -148,8 +152,24 @@ def parse_input(input_data):
     return graph
 
 def main():
+    if len(sys.argv) < 3:
+        print("Usage: python weighted_astar.py <file_name> <method> [weight]")
+        return
+    
     file_name = sys.argv[1]
     method = sys.argv[2]
+    
+    # Default weight is 1.0 (equivalent to standard A*)
+    weight = 1.0
+    if len(sys.argv) > 3:
+        try:
+            weight = float(sys.argv[3])
+            if weight < 1.0:
+                print("Warning: Weight should be ≥ 1.0. Using 1.0 instead.")
+                weight = 1.0
+        except ValueError:
+            print("Warning: Invalid weight value. Using default weight of 1.0")
+    
     try:
         with open(file_name, "r") as file:
             input_data = file.read()
@@ -174,15 +194,14 @@ def main():
         print("Error: No destination nodes specified in the input file.")
         return
 
-    print(f"{file_name} {method}")
+    print(f"{file_name} {method} (weight={weight})")
     print(f"Goal: {', '.join(map(str, graph.destinations))} \nNumber of nodes: {len(graph.nodes)}")
     
-    path, cost = astar_search(graph, graph.origin, graph.destinations)
+    path, cost = weighted_astar_search(graph, graph.origin, graph.destinations, weight)
     
     if path:
         print(f"Path: {' -> '.join(map(str, path))}")
         print(f"Total cost: {cost}")
-        
     else:
         print("No path found to any destination!")
 
